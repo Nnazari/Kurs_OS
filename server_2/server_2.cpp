@@ -1,4 +1,4 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+я╗┐#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <iostream> 
 #include <cstdio> 
 #include <cstring> 
@@ -8,34 +8,33 @@
 using namespace std;
 bool flag = true;
 DWORD pid;
-DWORD WINAPI serverContorl(LPVOID lpParam) { //Контроль
-	char buffer[1024] = { 0 }; //Буфер для данных
-	SOCKET client = *(SOCKET*)lpParam; //Сокет для клиента
-	while (true) { //Цикл работы сервера 
+DWORD WINAPI serverContorl(LPVOID lpParam) { //╨г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
+	char buffer[1024] = { 0 };
+	SOCKET client = *(SOCKET*)lpParam; //╨б╨╛╨║╨╡╤В ╨║╨╗╨╕╨╡╨╜╤В╨░
+	while (true) {
 		fgets(buffer, 1024, stdin);
-		if (send(client, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {//Ошибка отправки
-			cout << "Ошибка отправки : " << WSAGetLastError() << endl;
+		if (send(client, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
+			cout << "╨Ю╤И╨╕╨▒╨║╨░ ╨╛╤В╨┐╤А╨░╨▓╨║╨╕ ╨╕╨╜╤Д╨╛╨╝╨░╤Ж╨╕╨╕ ╨║╨╗╨╕╨╡╨╜╤В╤Г: " << WSAGetLastError() << endl;
 			return -1;
 		}
-		if (strcmp(buffer, "exit\n") == 0) {//Ошибка приёма
-			cout << "Отключение сервера " << endl;
+		if (strcmp(buffer, "exit\n") == 0) {
+			cout << "╨Ю╤В╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╤Б╨╡╤А╨▓╨╡╤А╨░" << endl;
 			break;
 		}
 	}
 	return 1;
 }
-DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
+DWORD WINAPI serverSend(LPVOID lpParam) {
 	char buffercl[1024] = { 0 };
 	char buffersr[1024] = { 0 };
 	SOCKET client = *(SOCKET*)lpParam;
 	while (true) {
 		if (recv(client, buffercl, sizeof(buffercl), 0) == SOCKET_ERROR) {
-			//Если не удалось получить данные буфера, сообщить об ошибке и выйти
-			cout << "Не удалось получить данные: " << WSAGetLastError() << endl;
+			cout << "╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨╛╤В ╨║╨╗╨╕╨╡╨╜╤В╨░: " << WSAGetLastError() << endl;
 			return -1;
 		}
 		if (strcmp(buffercl, "exit\n") == 0) {
-			cout << "Клиент отключился" << endl;
+			cout << "╨Ъ╨╗╨╕╨╡╨╜╤В ╨╛╤В╨║╨╗╤О╤З╨╕╨╗╤Б╤П" << endl;
 			break;
 		}
 		else if (strcmp(buffercl, "Memory\n") == 0) {
@@ -44,21 +43,21 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 
 			if (GlobalMemoryStatusEx(&memStatus)) {
 				float freeMemoryPercent = (memStatus.ullAvailPhys * 100.0f) / memStatus.ullTotalPhys;
-				sprintf_s(buffersr, "%s %f %c", "Свободная память: ", freeMemoryPercent , '%');
+				sprintf_s(buffersr, "%s %f %c", "╨б╨▓╨╛╨▒╨╛╨┤╨╜╨░╤П ╨┐╨░╨╝╤П╤В╤М: ", freeMemoryPercent , '%');
 			}else{
-				sprintf_s(buffersr, "%s", "Ошибка при получения данных о памяти");
+				sprintf_s(buffersr, "%s", "╨Ю╤И╨╕╨▒╨║╨░ ╨┤╨╛╤Б╤В╤Г╨┐╨░ ╨║ ╨┐╨░╨╝╤П╤В╨╕");
 			}
 		}
-		else if (strcmp(buffercl, "time\n") == 0) {//часовой пояс
-			// Получаем дескриптор текущего процесса
+		else if (strcmp(buffercl, "time\n") == 0) {
+			
 			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
 			FILETIME createTime, exitTime, kernelTime, userTime;
 			GetProcessTimes(hProcess, &createTime, &exitTime, &kernelTime, &userTime);
 
-			sprintf_s(buffersr, "%s %lld %s ","Время работы процесса: ",hProcess ,"мс");
+			sprintf_s(buffersr, "%s %lld %s ","╨Т╤А╨╡╨╝╤П ╨┐╤А╨╛╤Ж╨╡╤Б╤Б╨░ ╨▓ ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М╤Б╨║╨╛╨╝ ╤А╨╡╨╢╨╕╨╝╨╡: ",hProcess ,"╨╝╤Б");
 		}
-		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {//Ошибка отправки
-			cout << "Ошибка отправки : " << WSAGetLastError() << endl;
+		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {//╨Л╨╕╨Б╨О╨Д┬а ┬о╨▓╨З╨░┬а╤Ю╨Д╨Б
+			cout << "╨Ю╤И╨╕╨▒╨║╨░ ╨╛╤В╨┐╤А╨░╨▓╨║╨╕ : " << WSAGetLastError() << endl;
 			return -1;
 		}
 		memset(buffercl, 0, sizeof(buffercl));
@@ -68,52 +67,52 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 }
 
 int main() {
-	WSADATA WSAData; //Данные 
-	SOCKET server2, client; //Сокеты сервера и клиента
-	SOCKADDR_IN serverAddr, clientAddr; //Адреса сокетов
+	WSADATA WSAData;
+	SOCKET server1, client;
+	SOCKADDR_IN serverAddr, clientAddr;
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
-	pid = GetCurrentProcessId();
-	server2 = socket(AF_INET, SOCK_STREAM, 0); //Создали сервер
-	if (server2 == INVALID_SOCKET) {
-		cout << "Ошибка создание сервера :" << WSAGetLastError() << endl;
-		return -1;
-	}
-	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.2");
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(5555);
-	if (bind(server2, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-		cout << "Ошибка связывания: " << WSAGetLastError() << endl;
-		return -1;
-	}
-
-	if (listen(server2, 0) == SOCKET_ERROR) { //Если не удалось получить запрос
-		cout << "Ошибка получения запроса :" << WSAGetLastError() << endl;
-		return -1;
-	}
-	cout << "Сервер ожидает подключения...." << endl;
-	int clientAddrSize = sizeof(clientAddr); 
-	if ((client = accept(server2, (SOCKADDR*)&clientAddr, &clientAddrSize)) != INVALID_SOCKET) {
-		//Если соединение установлено
-		cout << "Клиент подключен." << endl;
-		cout << "Теперь вы можете пользоваться командами." << "Enter \"exit\" to disconnect" << endl;
-
-		DWORD tid; //Идентификатор
-		HANDLE t1 = CreateThread(NULL, 0, serverContorl, &client, 0, &tid); //Создание потока для получения данных
-		if (t1 == NULL) { //Ошибка создания потока 
-			cout << "Ошибка созжания потока : " << WSAGetLastError() << endl;
-		}
-		HANDLE t2 = CreateThread(NULL, 0, serverSend, &client, 0, &tid); //Создание потока для отправки данных
-		if (t2 == NULL) {
-			cout << "Ошибка созжания потока : " << WSAGetLastError() << endl;
-		}
-
-		WaitForSingleObject(t1, INFINITE);
-		WaitForSingleObject(t2, INFINITE);
-		if (closesocket(server2) == SOCKET_ERROR) { //Ошибка закрытия сокета
-			cout << "Ошибка закрытия сокета: " << WSAGetLastError() << endl;
+	while (true) {
+		server1 = socket(AF_INET, SOCK_STREAM, 0); //╤Б╨╛╨╖╨┤╨░╨╜╨╕╨╡ ╤Б╨╛╨║╨╡╤В╨░ ╤Б╨╡╤А╨▓╨╡╤А╨░
+		if (server1 == INVALID_SOCKET) {
+			cout << "╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П ╤Б╨╛╨║╨╡╤В╨░:" << WSAGetLastError() << endl;
 			return -1;
 		}
-		WSACleanup();
-		flag = true;
+		serverAddr.sin_addr.s_addr = inet_addr("127.0.0.2");
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_port = htons(5555);
+		if (bind(server1, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+			cout << "╨Ю╤И╨╕╨▒╨║╨░ ╨┐╤А╨╕╨▓╤П╨╖╨║╨╕ : " << WSAGetLastError() << endl;
+			return -1;
+		}
+
+		if (listen(server1, 0) == SOCKET_ERROR) {
+			cout << "╨Ю╤И╨╕╨▒╨║╨░ ╨┐╨╛╨╕╤Б╨║╨░:" << WSAGetLastError() << endl;
+			return -1;
+		}
+		cout << "╨Ю╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┐╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╤П ╨║╨╗╨╕╨╡╨╜╤В╨░...." << endl;
+
+		int clientAddrSize = sizeof(clientAddr);
+		if ((client = accept(server1, (SOCKADDR*)&clientAddr, &clientAddrSize)) != INVALID_SOCKET) {
+			cout << "╨Ъ╨╗╨╕╨╡╨╜╤В ╨┐╨╛╨┤╨║╨╗╤О╤З╨╡╨╜┬н." << endl;
+			cout << "Enter \"exit\" to disconnect" << endl;
+
+			DWORD tid;
+
+			HANDLE t2 = CreateThread(NULL, 0, serverSend, &client, 0, &tid);
+			if (t2 == NULL) {
+				cout << "╨╛╤И╨╕╨▒╨║╨░ ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П ╨┐╨╛╤В╨╛╨║╨░ ╨╛╤В╨┐╤А╨░╨▓╨║╨╕: " << WSAGetLastError() << endl;
+			}
+			HANDLE t1 = CreateThread(NULL, 0, serverContorl, &client, 0, &tid);
+			if (t1 == NULL) {
+				cout << "╨Ю╤И╨╕╨▒╨║╨░ ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П ╨┐╨╛╤В╨╛╨║╨░ ╨║╨╛╨╜╤В╤А╨╛╨╗╤П: " << WSAGetLastError() << endl;
+			}
+			WaitForSingleObject(t1, INFINITE);
+			WaitForSingleObject(t2, INFINITE);
+			if (closesocket(server1) == SOCKET_ERROR) {
+				cout << "╨Ю╤И╨╕╨▒╨║╨░ ╨╖╨░╨║╤А╤Л╤В╤В╨╕╤П ╤Б╨╛╨║╨╡╤В╨░: " << WSAGetLastError() << endl;
+				return -1;
+			}
+		}
 	}
+	WSACleanup();
 }

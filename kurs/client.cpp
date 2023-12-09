@@ -1,22 +1,23 @@
-
+Ôªø
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <iostream> 
 #include <cstdio> 
 #include <cstring> 
-#include <winsock2.h> 
+#include <winsock2.h>
+#include <windows.h>
 #pragma comment(lib, "WS2_32.lib")
 using namespace std;
 bool flag = true;
-DWORD WINAPI clientReceive(LPVOID lpParam) { //èÆ´„Á•≠®• §†≠≠ÎÂ Æ‚ ·•‡¢•‡†
+DWORD WINAPI clientReceive(LPVOID lpParam) { //–ø–æ–ª—É—á–µ–Ω–∏—è –∫–ª–∏–µ–Ω—Ç–æ–º
 	char buffer[1024] = { 0 };
 	SOCKET server = *(SOCKET*)lpParam;
 	while (flag) {
 		if (recv(server, buffer, sizeof(buffer), 0) == SOCKET_ERROR ) {
-			cout << "ê†ß‡Î¢ ·Æ•§®≠•≠®Ô : " << WSAGetLastError() << endl;
+			cout << "–û—à–∏–±–∫–∞ –ø–æ–ª—É—á–µ–Ω–∏—è –æ—Ç–≤–µ—Ç–∞ : " << WSAGetLastError() << endl;
 			return -1;
 		}
 		if (strcmp(buffer, "exit\n") == 0) {
-			cout << "ë•‡¢•‡ Æ‚™´ÓÁ•≠" << endl;
+			cout << "–°–µ—Ä–≤–µ—Ä –æ—Ç–∫–ª—é—á–µ–Ω" << endl;
 			flag = false;
 			break;
 		}
@@ -26,17 +27,18 @@ DWORD WINAPI clientReceive(LPVOID lpParam) { //èÆ´„Á•≠®• §†≠≠ÎÂ Æ‚ ·•‡¢•‡†
 	return 1;
 }
 
-DWORD WINAPI clientSend(LPVOID lpParam) { //é‚Ø‡†¢™† §†≠≠ÎÂ ≠† ·•‡¢•‡
+DWORD WINAPI clientSend(LPVOID lpParam) { //–æ—Ç–ø—Ä–∞–≤–∫–∞ –∫–ª–∏–µ–Ω—Ç–æ–º
 	char buffer[1024] = { 0 };
 	SOCKET server = *(SOCKET*)lpParam;
 	while (flag) {
 		fgets(buffer, 1024, stdin);
 		if (send(server, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
-			cout << "éË®°™† Æ‚Ø‡†¢™® §†≠≠ÎÂ: " << WSAGetLastError() << endl;
+			cout << "–û—à–∏–±–∫–∞ –æ—Ç–ø—Ä–∞–≤–∫–∏ –∑–∞–ø—Ä–æ—Å–∞: " << WSAGetLastError() << endl;
 			return -1;
 		}
 		if (strcmp(buffer, "exit\n") == 0) {
-			cout << "ÇÎÂÆ§ · ·•‡¢•‡†" << endl;
+			cout << "–í—ã—Ö–æ–¥ —Å —Å–µ—Ä–≤–µ—Ä–∞" << endl;
+			CloseHandle((HANDLE)lpParam);
 			flag = false;
 			break;
 		}
@@ -51,35 +53,36 @@ int main() {
 	char buffer[1024] = { 0 };
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(5555);
+	WSAStartup(MAKEWORD(2, 0), &WSAData);
 	while (true) {
-		WSAStartup(MAKEWORD(2, 0), &WSAData);
+		HANDLE event = CreateEvent(NULL, FALSE, FALSE, NULL);
 		if ((client = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-			cout << "éË®°™† ·Æß§†≠®• ·Æ™•‚†: " << WSAGetLastError() << endl;
+			cout << "–û—à–∏–±–∫–∞ —Å–æ–∑–¥–∞–Ω–∏—è —Å–æ–∫–µ—Ç–∞: " << WSAGetLastError() << endl;
 			return -1;
 		}
-		cout << "é¶®§†≠®• ØÆ§™´ÓÁ•≠®Ô ™ ·•‡¢•‡† , ¢¢•§®‚• ip:" << endl;
+		cout << "–û–∂–∏–¥–∞–Ω–∏–µ –ø–æ–¥–∫–ª—é—á–µ–Ω–∏—è –∫ —Å–µ—Ä–≤–µ—Ä—É , –≤–≤–µ–¥–∏—Ç–µ ip —Å–µ—Ä–≤–µ—Ä–∞:" << endl;
 		fgets(buffer, 1024, stdin);
-		addr.sin_addr.s_addr = inet_addr(buffer); //„·‚†≠Æ¢™† †§‡•··†
+		addr.sin_addr.s_addr = inet_addr(buffer); //–ø–æ–ª—É—á–µ–Ω–∏—è –∞–¥—Ä–µ—Å—Å–∞
 		if (connect(client, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR) {
-			cout << "éË®°™† ØÆ§™´ÓÁ•≠®Ô ™ ·•‡¢•‡„: " << WSAGetLastError() << endl;
+			cout << "–û—à–∏–±–∫–∞ –ø–æ–¥–∫–ª—é—á–µ–Ω–∏—è: " << WSAGetLastError() << endl;
 		}
 		else if (strcmp(buffer, "exit\n") == 0) {
 			break;
 		}
 		else {
-			cout << "ì·Ø•Ë≠Æ• ØÆ§™´ÓÁ•≠®• ™ ·•‡¢•‡„" << endl;
-			cout << "í•Ø•‡Ï ¢Î ¨Æ¶•‚• ØÆ´ÏßÆ¢†‚Ï·Ô ™Æ¨†≠§†¨®." << "Enter \"exit\" to disconnect" << endl;
+			cout << "‚Äú–£—Å–ø–µ—à–Ω–æ–µ –ø–æ–¥–∫–ª—é—á–µ–Ω–∏–µ –∫ —Å–µ—Ä–≤–µ—Ä—É" << endl;
+			cout << "–¢–µ–ø–µ—Ä—å –≤—ã –º–æ–∂–µ—Ç–µ –æ—Ç–ø—Ä–∞–≤–ª—è—Ç—å –∑–∞–ø—Ä–æ—Å—ã –ø—É—Ç—ë–º –≤–≤–æ–¥–∞ —Ç–µ–∫—Å—Ç–∞." << "Enter \"exit\" to disconnect" << endl;
 
 			DWORD tid;
 			HANDLE t1 = CreateThread(NULL, 0, clientReceive, &client, 0, &tid);
-			if (t1 == NULL) cout << "éË®°™† ·Æß¶†≠®Ô ØÆ‚Æ™†ˇ: " << GetLastError();
-			HANDLE t2 = CreateThread(NULL, 0, clientSend, &client, 0, &tid);
-			if (t2 == NULL) cout << "éË®°™† ·Æß¶†≠®Ô ØÆ‚Æ™†ˇ: " << GetLastError();
-			WaitForSingleObject(t1, 5);
-			if (t2 != 0) { WaitForSingleObject(t2, INFINITE); }
+			if (t1 == NULL) cout << "–û—à–∏–±–∫–∞ —Å–æ–∑–¥–∞–Ω–∏—è –ø–æ—Ç–æ–∫–∞ –ø–æ–ª—É—á–µ–Ω–∏—è: " << GetLastError();
+			HANDLE t2 = CreateThread(NULL, 0, clientSend, ( &client, &t1), 0, & tid);
+			if (t2 == NULL) cout << "–û—à–∏–±–∫–∞ —Å–æ–∑–¥–∞–Ω–∏—è –ø–æ—Ç–æ–∫–∞ –æ—Ç–ø—Ä–∞–≤–∫–∏: " << GetLastError();
+			WaitForSingleObject(t1, INFINITE);
+			WaitForSingleObject(t2, INFINITE);
 			flag = true;
-			if (closesocket(client) == SOCKET_ERROR) { //ß†™‡Î‚®• ·Æ™•‚†
-				cout << "éË®°™† ·Æß§†≠®• ·Æ™•‚†" << WSAGetLastError() << endl;
+			if (closesocket(client) == SOCKET_ERROR) { //–ó–∞–∫—Ä—ã—Ç–∏–µ —Å–æ–∫–µ—Ç–∞
+				cout << "–û—à–∏–±–∫–∞ –∑–∞–∫—Ä—ã—Ç–∏—è —Å–æ–∫–µ—Ç–∞ : " << WSAGetLastError() << endl;
 				return -1;
 			}
 		}
