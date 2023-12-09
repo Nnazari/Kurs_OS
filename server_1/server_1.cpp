@@ -14,11 +14,11 @@ DWORD WINAPI serverContorl(LPVOID lpParam) { //Управление
 	SOCKET client = *(SOCKET*)lpParam; //Сокет клиента
 	while (true) { 
 		fgets(buffer, 1024, stdin);
-		if (send(client, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
-			cout << "Ошибка отправки инфомации клиенту: " << WSAGetLastError() << endl;
-			return -1;
-		}
 		if (strcmp(buffer, "exit\n") == 0) {
+			if (send(client, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
+				cout << "Ошибка отправки инфомации клиенту: " << WSAGetLastError() << endl;
+				return -1;
+			}
 			cout << "Отключение сервера" << endl;
 			break;
 		}
@@ -105,8 +105,11 @@ int main() {
 			if (t1 == NULL) {
 				cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
 			}
-			WaitForSingleObject(t1, INFINITE);
+			
 			WaitForSingleObject(t2, INFINITE);
+			TerminateThread(t1, 1);
+			WaitForSingleObject(t1, INFINITE);
+			TerminateThread(t2, 1);
 			if (closesocket(server1) == SOCKET_ERROR) { 
 				cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;
 				return -1;

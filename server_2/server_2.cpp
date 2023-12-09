@@ -106,8 +106,10 @@ int main() {
 			if (t1 == NULL) {
 				cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
 			}
-			WaitForSingleObject(t1, INFINITE);
+			
 			WaitForSingleObject(t2, INFINITE);
+			TerminateThread(t1, 1);
+			WaitForSingleObject(t1, INFINITE);
 			if (closesocket(server1) == SOCKET_ERROR) {
 				cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;
 				return -1;
