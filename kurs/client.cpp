@@ -69,7 +69,7 @@ int main() {
 			break;
 		}
 		else {
-			cout << "“Успешное подключение к серверу" << endl;
+			cout << "Успешное подключение к серверу" << endl;
 			cout << "Теперь вы можете отправлять запросы путём ввода текста." << "Enter \"exit\" to disconnect" << endl;
 
 			DWORD tid;

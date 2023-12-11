@@ -64,6 +64,27 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 	return 1;
 }
 
+DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
+	startTime = GetTickCount64();//добавить разветвление 
+			cout << "Клиент подключен." << endl;
+			cout << "Enter \"exit\" to disconnect" << endl;
+			DWORD tid;
+			HANDLE t2 = CreateThread(NULL, 0, serverSend, (SOCKET*)client, 0, &tid);
+			if (t2 == NULL) {
+				cout << "ошибка создания потока отправки: " << WSAGetLastError() << endl;
+			}
+			HANDLE t1 = CreateThread(NULL, 0, serverContorl, (SOCKET*)client, 0, &tid);
+			if (t1 == NULL) {
+				cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
+			}
+			if (t2 != 0) {
+				WaitForSingleObject(t2, INFINITE);
+			}
+				TerminateThread(t1, 1);
+			return 1;
+}
+
+
 int main() {
 	WSADATA WSAData;
 	SOCKET server1, client;
@@ -91,29 +112,16 @@ int main() {
 
 		int clientAddrSize = sizeof(clientAddr);
 		if ((client = accept(server1, (SOCKADDR*)&clientAddr, &clientAddrSize)) != INVALID_SOCKET) {
-			startTime = GetTickCount64();
-			cout << "Клиент подключен­." << endl;
-			cout << "Enter \"exit\" to disconnect" << endl;
-
-			DWORD tid; 
-
-			HANDLE t2 = CreateThread(NULL, 0, serverSend, &client, 0, &tid); 
-			if (t2 == NULL) {
-				cout << "ошибка создания потока отправки: " << WSAGetLastError() << endl;
+			DWORD tid;
+			HANDLE cl = CreateThread(NULL, 0, clientControl, &client, 0, &tid);
+			if (cl == NULL) {
+				cout << "Ошибка создания потока клиента: " << WSAGetLastError() << endl;
 			}
-			HANDLE t1 = CreateThread(NULL, 0, serverContorl, &client, 0, &tid); 
-			if (t1 == NULL) {
-				cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
-			}
-			
-			WaitForSingleObject(t2, INFINITE);
-			TerminateThread(t1, 1);
-			WaitForSingleObject(t1, INFINITE);
-			TerminateThread(t2, 1);
-			if (closesocket(server1) == SOCKET_ERROR) { 
-				cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;
-				return -1;
-			}
+			if (cl == 0) { WaitForSingleObject(cl, INFINITE); }
+		}
+		if (closesocket(server1) == SOCKET_ERROR) {
+			cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;
+			return -1;
 		}
 	}
 	WSACleanup();
