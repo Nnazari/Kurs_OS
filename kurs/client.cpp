@@ -4,7 +4,6 @@
 #include <cstdio> 
 #include <cstring> 
 #include <winsock2.h>
-#include <windows.h>
 #pragma comment(lib, "WS2_32.lib")
 using namespace std;
 bool flag = true;
@@ -22,8 +21,10 @@ DWORD WINAPI clientReceive(LPVOID lpParam) { //получения клиенто
 			flag = false;
 			break;
 		}
-		cout << "Server: " << buffer << endl;
-		memset(buffer, 0, sizeof(buffer));
+		if (strcmp(buffer, "") != 0) {
+			cout << "Server: " << buffer << endl;
+			memset(buffer, 0, sizeof(buffer));
+		}
 	}
 	return 1;
 }
@@ -50,8 +51,9 @@ int main() {
 	SOCKET client;
 	SOCKADDR_IN addr;
 	char buffer[1024] = { 0 };
+	char buffer2[1024] = { 0 };
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(5555);
+	
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
 	
 	while (true) {
@@ -62,11 +64,17 @@ int main() {
 		cout << "Ожидание подключения к серверу , введите ip сервера:" << endl;
 		fgets(buffer, 1024, stdin);
 		addr.sin_addr.s_addr = inet_addr(buffer); //получения адресса
+		if (strcmp(buffer, "exit\n") == 0) {
+			break;
+		}
+		cout << "Введите порт:" << endl;
+		fgets(buffer2, 1024, stdin);
+		if (strcmp(buffer2, "exit\n") == 0) {
+			break;
+		}
+		addr.sin_port = htons(atoi(buffer2));
 		if (connect(client, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR) {
 			cout << "Ошибка подключения: " << WSAGetLastError() << endl;
-		}
-		else if (strcmp(buffer, "exit\n") == 0) {
-			break;
 		}
 		else {
 			cout << "Успешное подключение к серверу" << endl;

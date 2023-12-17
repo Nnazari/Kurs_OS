@@ -97,9 +97,9 @@ int main() {
 			cout << "Ошибка создания сокета:" << WSAGetLastError() << endl;
 			return -1;
 		}
-		serverAddr.sin_addr.s_addr = inet_addr("127.0.0.2");
+		serverAddr.sin_addr.s_addr = inet_addr("192.168.0.106");
 		serverAddr.sin_family = AF_INET;
-		serverAddr.sin_port = htons(5555);
+		serverAddr.sin_port = htons(5517);
 		if (bind(server1, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
 			cout << "Ошибка привязки : " << WSAGetLastError() << endl;
 			return -1;
