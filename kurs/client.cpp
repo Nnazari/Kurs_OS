@@ -59,6 +59,7 @@ int main() {
 	while (true) {
 		if ((client = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
 			cout << "Ошибка создания сокета: " << WSAGetLastError() << endl;
+			WSACleanup();
 			return -1;
 		}
 		cout << "Ожидание подключения к серверу , введите ip сервера:" << endl;
@@ -91,6 +92,7 @@ int main() {
 			flag = true;
 			if (closesocket(client) == SOCKET_ERROR) { //Закрытие сокета
 				cout << "Ошибка закрытия сокета : " << WSAGetLastError() << endl;
+				WSACleanup();
 				return -1;
 			}
 		}

@@ -5,9 +5,12 @@
 #include <winsock2.h> 
 #pragma comment(lib, "WS2_32.lib")
 #include <Windows.h>
+#include <format>
 using namespace std;
 bool flag = true;
 DWORD pid;
+
+
 DWORD WINAPI serverContorl(LPVOID lpParam) { //Управление
 	char buffer[1024] = { 0 };
 	SOCKET client = *(SOCKET*)lpParam; //Сокет клиента
@@ -24,6 +27,8 @@ DWORD WINAPI serverContorl(LPVOID lpParam) { //Управление
 	}
 	return 1;
 }
+
+
 DWORD WINAPI serverSend(LPVOID lpParam) {
 	char buffercl[1024] = { 0 };
 	char buffersr[1024] = { 0 };
@@ -49,14 +54,18 @@ DWORD WINAPI serverSend(LPVOID lpParam) {
 			}
 		}
 		else if (strcmp(buffercl, "time\n") == 0) {
-			
-			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
-			FILETIME createTime, exitTime, kernelTime, userTime;
-			GetProcessTimes(hProcess, &createTime, &exitTime, &kernelTime, &userTime);
-
-			sprintf_s(buffersr, "%s %lld %s ","Время процесса в пользовательском режиме: ",hProcess ,"мс");
+			FILETIME creationTime, exitTime, kernelTime, userTime;
+			if (!GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime)) {
+				std::cerr << "Error retrieving process times." << std::endl;
+				return 1;
+			}
+			ULARGE_INTEGER userTimeValue;
+			userTimeValue.LowPart = userTime.dwLowDateTime;
+			userTimeValue.HighPart = userTime.dwHighDateTime;
+			double userTimeInSeconds = userTimeValue.QuadPart / 10000000.0;
+			sprintf_s(buffersr, "%s %lf %s" , "Время процесса в пользовательском режиме: ", userTimeInSeconds,"с.");
 		}
-		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {//ЋиЁЎЄ  ®вЇа ўЄЁ
+		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {
 			cout << "Ошибка отправки : " << WSAGetLastError() << endl;
 			return -1;
 		}
@@ -79,18 +88,24 @@ DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
 	if (t1 == NULL) {
 		cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
 	}
-	if (t2 != 0) {
-		WaitForSingleObject(t2, INFINITE);
-	}
+
+	WaitForSingleObject(t2, INFINITE);
 	TerminateThread(t1, 1);
+	WaitForSingleObject(t1, INFINITE);
 	TerminateThread(t2, 1);
 	return 1;
 }
+
+
+
+
+
 int main() {
 	WSADATA WSAData;
 	SOCKET server1, client;
 	SOCKADDR_IN serverAddr, clientAddr;
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
+	
 	while (true) {
 		server1 = socket(AF_INET, SOCK_STREAM, 0); //создание сокета сервера
 		if (server1 == INVALID_SOCKET) {
