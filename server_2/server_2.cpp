@@ -7,25 +7,19 @@
 #include <Windows.h>
 #include <format>
 using namespace std;
-bool flag = true;
 DWORD pid;
-
+ULONGLONG startTime;
 
 DWORD WINAPI serverContorl(LPVOID lpParam) { //Управление
-	char buffer[1024] = { 0 };
-	SOCKET client = *(SOCKET*)lpParam; //Сокет клиента
+	char buffer[1024] = { 0 }; //Сокет клиента
 	while (true) {
 		fgets(buffer, 1024, stdin);
-		if (send(client, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
-			cout << "Ошибка отправки инфомации клиенту: " << WSAGetLastError() << endl;
-			return -1;
-		}
 		if (strcmp(buffer, "exit\n") == 0) {
 			cout << "Отключение сервера" << endl;
-			break;
+			exit(1);
+
 		}
 	}
-	return 1;
 }
 
 
@@ -53,17 +47,8 @@ DWORD WINAPI serverSend(LPVOID lpParam) {
 				sprintf_s(buffersr, "%s", "Ошибка доступа к памяти");
 			}
 		}
-		else if (strcmp(buffercl, "time\n") == 0) {
-			FILETIME creationTime, exitTime, kernelTime, userTime;
-			if (!GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime)) {
-				std::cerr << "Error retrieving process times." << std::endl;
-				return 1;
-			}
-			ULARGE_INTEGER userTimeValue;
-			userTimeValue.LowPart = userTime.dwLowDateTime;
-			userTimeValue.HighPart = userTime.dwHighDateTime;
-			double userTimeInSeconds = userTimeValue.QuadPart / 10000000.0;
-			sprintf_s(buffersr, "%s %lf %s" , "Время процесса в пользовательском режиме: ", userTimeInSeconds,"с.");
+		else if (strcmp(buffercl, "session_time\n") == 0) {
+			sprintf_s(buffersr, "%lld %s", (GetTickCount64() - startTime) / (1000), " сек.");
 		}
 		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {
 			cout << "Ошибка отправки : " << WSAGetLastError() << endl;
@@ -74,25 +59,21 @@ DWORD WINAPI serverSend(LPVOID lpParam) {
 	}
 	return 1;
 }
+
 DWORD WINAPI clientControl(LPVOID client) { //Поток клиента 
 	cout << "Клиент подключен" << endl;
 	cout << "Enter \"exit\" to disconnect" << endl;
 
 	DWORD tid;
 
-	HANDLE t2 = CreateThread(NULL, 0, serverSend, (SOCKET*)client, 0, &tid);
-	if (t2 == NULL) {
+	HANDLE sendThread = CreateThread(NULL, 0, serverSend, (SOCKET*)client, 0, &tid);
+	if (sendThread == NULL) {
 		cout << "ошибка создания потока отправки: " << WSAGetLastError() << endl;
 	}
-	HANDLE t1 = CreateThread(NULL, 0, serverContorl, (SOCKET*)client, 0, &tid);
-	if (t1 == NULL) {
-		cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
-	}
+	
 
-	WaitForSingleObject(t2, INFINITE);
-	TerminateThread(t1, 1);
-	WaitForSingleObject(t1, INFINITE);
-	TerminateThread(t2, 1);
+	WaitForSingleObject(sendThread, INFINITE);
+	
 	return 1;
 }
 
@@ -105,7 +86,11 @@ int main() {
 	SOCKET server1, client;
 	SOCKADDR_IN serverAddr, clientAddr;
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
-	
+	startTime = GetTickCount64();//добавить разветвление 
+	HANDLE serverControlThred = CreateThread(NULL, 0, serverContorl, 0, 0, 0);
+	if (serverControlThred == NULL) {
+		cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
+	}
 	while (true) {
 		server1 = socket(AF_INET, SOCK_STREAM, 0); //создание сокета сервера
 		if (server1 == INVALID_SOCKET) {
@@ -133,7 +118,7 @@ int main() {
 			if (cl == NULL) {
 				cout << "Ошибка создания потока клиента: " << WSAGetLastError() << endl;
 			}
-			if (cl == 0) { WaitForSingleObject(cl, INFINITE); }
+			WaitForSingleObject(cl, INFINITE);
 		}
 		if (closesocket(server1) == SOCKET_ERROR) {
 			cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;

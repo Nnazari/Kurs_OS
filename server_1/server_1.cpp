@@ -8,7 +8,7 @@
 #include <Windows.h>
 #include <ctime>
 using namespace std;
-ULONGLONG startTime;
+
 // Подключаемся к именованному каналу
 
 DWORD bytesWritten;
@@ -29,26 +29,16 @@ HANDLE connectionPipe() {
 
 
 DWORD WINAPI serverContorl(LPVOID lpParam) { //Управление
-	char buffer[1024] = { 0 };
-	SOCKET client = *(SOCKET*)lpParam; //Сокет клиента
-	while (true) { 
-		
+	char buffer[1024] = { 0 }; //Сокет клиента
+	while (true) { 	
 		fgets(buffer, 1024, stdin);
 		if (strcmp(buffer, "exit\n") == 0) {
-			if (send(client, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
-				cout << "Ошибка отправки инфомации клиенту: " << WSAGetLastError() << endl;
-				sprintf_s(buffer, "%s %d", "Ошибка отправки инфомации клиенту: ", WSAGetLastError());
-				WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
-				GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
-				CloseHandle(pipe);
-				return -1;
-			}
 			cout << "Отключение сервера" << endl;
 			sprintf_s(buffer, "%s", "Отключение сервера");
 			WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 			GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
 			CloseHandle(pipe);
-			break;
+			exit(1);
 		}
 	}
 	return 1;
@@ -75,9 +65,24 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 			CloseHandle(pipe);
 			break;
 		}
-		else if (strcmp(buffercl, "session_time\n") == 0) {
-			sprintf_s(buffersr, "%lld %s", (GetTickCount64()- startTime)/(1000)," сек.");
-			sprintf_s(buffer, "%s", "Клинт смотрит время сессий");
+
+		else if (strcmp(buffercl, "work_time\n") == 0) {
+			ULONGLONG uptime = GetTickCount64();
+			unsigned int days = uptime / (24 * 60 * 60 * 1000);
+			uptime %= (24 * 60 * 60 * 1000);
+
+			unsigned int hours = uptime / (60 * 60 * 1000);
+			uptime %= (60 * 60 * 1000);
+
+			unsigned int minutes = uptime / (60 * 1000);
+			uptime %= (60 * 1000);
+
+			unsigned int seconds = uptime / 1000;
+			
+			sprintf_s(buffersr, "%s %d %s %d %s %d %s %d %s", "Время работы компьютера: ", days, "дней", hours, " часов, "
+				, minutes, " минут, "
+				, seconds, " секунд.");
+			sprintf_s(buffer, "%s", "Время работы сеанса");
 			WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 			GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
 			CloseHandle(pipe);
@@ -113,7 +118,7 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 }
 
 DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
-	startTime = GetTickCount64();//добавить разветвление 
+	
 	char buffer[100] = { 0 };
 	cout << "Клиент подключен." << endl;
 	cout << "Enter \"exit\" to disconnect" << endl;
@@ -131,18 +136,8 @@ DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
 				CloseHandle(pipe);
 
 			}
-	HANDLE t1 = CreateThread(NULL, 0, serverContorl, (SOCKET*)client, 0, &tid);
-	if (t1 == NULL) {
-				cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
-				sprintf_s(buffer, "%s %d", "Ошибка создания потока контроля : ", WSAGetLastError());
-				WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
-				GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
-				CloseHandle(pipe);
-			}
-	if (t2 != 0) {
-				WaitForSingleObject(t2, INFINITE);
-			}
-		TerminateThread(t1, 1);
+	WaitForSingleObject(t2, INFINITE);
+
 	return 1;
 }
 
@@ -154,6 +149,14 @@ int main() {
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
 	char buffer[100] = { 0 };
 	// Имя именованного канала
+	HANDLE t1 = CreateThread(NULL, 0, serverContorl, 0, 0, 0);
+	if (t1 == NULL) {
+		cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
+		sprintf_s(buffer, "%s %d", "Ошибка создания потока контроля : ", WSAGetLastError());
+		WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
+		GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
+		CloseHandle(pipe);
+	}
 	while (true) {
 
 			server1 = socket(AF_INET, SOCK_STREAM, 0); //создание сокета сервера

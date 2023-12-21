@@ -4,48 +4,57 @@
 #include <cstdio> 
 #include <cstring> 
 #include <winsock2.h>
+#include <csignal> 
 #pragma comment(lib, "WS2_32.lib")
 using namespace std;
-bool flag = true;
+HANDLE t1, t2;
+bool isTerminatedt1 = false;
+bool isTerminatedt2 = false;
 DWORD WINAPI clientReceive(LPVOID lpParam) { //получения клиентом
 	char buffer[1024] = { 0 };
 	SOCKET server = *(SOCKET*)lpParam;
-	while (flag) {
-		if (!flag) {break;}
+	while (true) {
+		if (isTerminatedt1) { break; }
 		if (recv(server, buffer, sizeof(buffer), 0) == SOCKET_ERROR ) {
+			if (WSAGetLastError() == 10054) {
+				cout << "Сервер отключен."<< endl;
+				isTerminatedt2 = true;
+				return 1;
+			}
+			else
 			cout << "Ошибка получения ответа : " << WSAGetLastError() << endl;
 			return -1;
-		}
-		if (strcmp(buffer, "exit\n") == 0) {
-			cout << "Сервер отключен" << endl;
-			flag = false;
-			break;
 		}
 		if (strcmp(buffer, "") != 0) {
 			cout << "Server: " << buffer << endl;
 			memset(buffer, 0, sizeof(buffer));
 		}
 	}
+	isTerminatedt1 = false;
 	return 1;
 }
 
 DWORD WINAPI clientSend(LPVOID lpParam) { //отправка клиентом
 	char buffer[1024] = { 0 };
 	SOCKET server = *(SOCKET*)lpParam;
-	while (flag) {
+	while (true) {
 		fgets(buffer, 1024, stdin);
+		if (isTerminatedt2) { break; }
 		if (send(server, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
-			cout << "Ошибка отправки запроса 1: " << WSAGetLastError() << endl;
+			cout << "Ошибка отправки запроса : " << WSAGetLastError() << endl;
 			return -1;
 		}
 		if (strcmp(buffer, "exit\n") == 0) {
 			cout << "Выход с сервера" << endl;
-			flag = false;
-			break;
+			isTerminatedt1 = true;
+			return 1;
 		}
+
 	}
+	isTerminatedt2 = false;
 	return 1;
 }
+
 int main() {
 	WSADATA WSAData;
 	SOCKET client;
@@ -66,12 +75,14 @@ int main() {
 		fgets(buffer, 1024, stdin);
 		addr.sin_addr.s_addr = inet_addr(buffer); //получения адресса
 		if (strcmp(buffer, "exit\n") == 0) {
-			break;
+			WSACleanup();
+			exit(1);
 		}
 		cout << "Введите порт:" << endl;
 		fgets(buffer2, 1024, stdin);
 		if (strcmp(buffer2, "exit\n") == 0) {
-			break;
+			WSACleanup();
+			exit(1);
 		}
 		addr.sin_port = htons(atoi(buffer2));
 		if (connect(client, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR) {
@@ -82,14 +93,14 @@ int main() {
 			cout << "Теперь вы можете отправлять запросы путём ввода текста." << "Enter \"exit\" to disconnect" << endl;
 
 			DWORD tid;
-			HANDLE t1 = CreateThread(NULL, 0, clientReceive, &client, 0, &tid);
+			 t1 = CreateThread(NULL, 0, clientReceive, &client, 0, &tid);
 			if (t1 == NULL) cout << "Ошибка создания потока получения: " << GetLastError();
-			HANDLE t2 = CreateThread(NULL, 0, clientSend, &client,  0, &tid);
+			 t2 = CreateThread(NULL, 0, clientSend, &client,  0, &tid);
 			if (t2 == NULL) cout << "Ошибка создания потока отправки: " << GetLastError();
 			WaitForSingleObject(t2, INFINITE);
 			TerminateThread(t1, 1);
 			WaitForSingleObject(t1, INFINITE);
-			flag = true;
+			TerminateThread(t2, 1);
 			if (closesocket(client) == SOCKET_ERROR) { //Закрытие сокета
 				cout << "Ошибка закрытия сокета : " << WSAGetLastError() << endl;
 				WSACleanup();
