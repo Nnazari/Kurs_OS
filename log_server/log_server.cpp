@@ -26,6 +26,7 @@ void WriteToLog(const std::string& logMessage) {
 
 int main() {
     // Имя именованного канала
+    HANDLE mutexHandle = CreateMutexW(NULL, TRUE, (LPCWSTR)"Log_server");
     const wchar_t* pipeName = L"\\\\.\\pipe\\TaskServerPipe";
 
     // Создаем именованный канал для связи с сервером логирования
@@ -58,6 +59,6 @@ do{
 } while (strcmp(buffer, "Отключение сервера") != 0);
     // Закрываем канал
     CloseHandle(pipe);
-
+    CloseHandle(mutexHandle);
     return 0;
 }

@@ -26,12 +26,19 @@ DWORD WINAPI serverContorl(LPVOID lpParam) { //Управление
 DWORD WINAPI serverSend(LPVOID lpParam) {
 	char buffercl[1024] = { 0 };
 	char buffersr[1024] = { 0 };
+	char bufferready[1024] = { 0 };
 	SOCKET client = *(SOCKET*)lpParam;
 	while (true) {
+
 		if (recv(client, buffercl, sizeof(buffercl), 0) == SOCKET_ERROR) {
 			cout << "Ошибка получения запроса от клиента: " << WSAGetLastError() << endl;
 			return -1;
 		}
+		time_t currentTime = time(nullptr);
+		tm localTime;
+		localtime_s(&localTime, &currentTime);
+		char timeString[100];
+		strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &localTime);
 		if (strcmp(buffercl, "exit\n") == 0) {
 			cout << "Клиент отключился" << endl;
 			break;
@@ -50,12 +57,14 @@ DWORD WINAPI serverSend(LPVOID lpParam) {
 		else if (strcmp(buffercl, "session_time\n") == 0) {
 			sprintf_s(buffersr, "%lld %s", (GetTickCount64() - startTime) / (1000), " сек.");
 		}
-		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {
+		sprintf_s(bufferready, "%s %s %s", timeString,":", buffersr);
+		if (send(client, bufferready, strlen(bufferready), 0) == SOCKET_ERROR) {
 			cout << "Ошибка отправки : " << WSAGetLastError() << endl;
 			return -1;
 		}
 		memset(buffercl, 0, sizeof(buffercl));
 		memset(buffersr, 0, sizeof(buffersr));
+		memset(bufferready, 0, sizeof(bufferready));
 	}
 	return 1;
 }
@@ -82,6 +91,7 @@ DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
 
 
 int main() {
+	HANDLE mutexHandle = CreateMutexW(NULL, TRUE, (LPCWSTR)"server_2");//проверка
 	WSADATA WSAData;
 	SOCKET server1, client;
 	SOCKADDR_IN serverAddr, clientAddr;
@@ -95,6 +105,7 @@ int main() {
 		server1 = socket(AF_INET, SOCK_STREAM, 0); //создание сокета сервера
 		if (server1 == INVALID_SOCKET) {
 			cout << "Ошибка создания сокета:" << WSAGetLastError() << endl;
+			CloseHandle(mutexHandle);
 			return -1;
 		}
 		serverAddr.sin_addr.s_addr = inet_addr("192.168.0.106");
@@ -102,11 +113,13 @@ int main() {
 		serverAddr.sin_port = htons(5517);
 		if (bind(server1, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
 			cout << "Ошибка привязки : " << WSAGetLastError() << endl;
+			CloseHandle(mutexHandle);
 			return -1;
 		}
 
 		if (listen(server1, 0) == SOCKET_ERROR) {
 			cout << "Ошибка поиска:" << WSAGetLastError() << endl;
+			CloseHandle(mutexHandle);
 			return -1;
 		}
 		cout << "Ожидание подключения клиента...." << endl;
@@ -122,6 +135,7 @@ int main() {
 		}
 		if (closesocket(server1) == SOCKET_ERROR) {
 			cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;
+			CloseHandle(mutexHandle);
 			return -1;
 		}
 	}

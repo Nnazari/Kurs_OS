@@ -26,7 +26,7 @@ DWORD WINAPI clientReceive(LPVOID lpParam) { //получения клиенто
 			return -1;
 		}
 		if (strcmp(buffer, "") != 0) {
-			cout << "Server: " << buffer << endl;
+			cout << "Server "<< buffer << endl;
 			memset(buffer, 0, sizeof(buffer));
 		}
 	}

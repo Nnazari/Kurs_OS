@@ -47,6 +47,7 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 	char buffercl[1024] = { 0 };
 	char buffersr[1024] = { 0 };
 	char buffer[100] = { 0 };
+	char bufferready[1024] = {0};
 	SOCKET client = *(SOCKET*)lpParam;
 	while (true) {
 		if (recv(client, buffercl, sizeof(buffercl), 0) == SOCKET_ERROR) {
@@ -57,6 +58,11 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 			CloseHandle(pipe);
 			return -1;
 		}
+		time_t currentTime = time(nullptr);
+		tm localTime;
+		localtime_s(&localTime, &currentTime);
+		char timeString[100];
+		strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &localTime);
 		if (strcmp(buffercl, "exit\n") == 0) {
 			cout << "Клиент отключился" << endl;
 			sprintf_s(buffer, "%s", "Клиент отключился");
@@ -103,7 +109,8 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 			WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 			CloseHandle(pipe);
 		}
-		if (send(client, buffersr, sizeof(buffersr), 0) == SOCKET_ERROR) {
+		sprintf_s(bufferready, "%s %s %s", timeString, ":", buffersr);
+		if (send(client, bufferready, strlen(bufferready), 0) == SOCKET_ERROR) {
 			cout << "Ошибка отправки ответа клиенту : " << WSAGetLastError() << endl;
 			sprintf_s(buffer, "%s %d", "Ошибка отправки ответа клиенту : ", WSAGetLastError());
 			WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
@@ -113,6 +120,8 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 		}
 		memset(buffercl, 0, sizeof(buffercl));
 		memset(buffersr, 0, sizeof(buffersr));
+		memset(buffer, 0, sizeof(buffer));
+		memset(bufferready, 0, sizeof(bufferready));
 	}
 	return 1;
 }
@@ -143,6 +152,7 @@ DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
 
 
 int main() {
+	HANDLE mutexHandle = CreateMutexW(NULL, TRUE, (LPCWSTR)"server_1");//проверка
 	WSADATA WSAData;
 	SOCKET server1, client;
 	SOCKADDR_IN serverAddr, clientAddr;
@@ -166,6 +176,7 @@ int main() {
 				WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 				GetOverlappedResult(pipe, &overlapped, &bytesWritten,TRUE);
 				CloseHandle(pipe);
+				CloseHandle(mutexHandle);
 				return -1;
 			}
 			serverAddr.sin_addr.s_addr = inet_addr("192.168.0.106");
@@ -177,6 +188,7 @@ int main() {
 				WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 				GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
 				CloseHandle(pipe);
+				CloseHandle(mutexHandle);
 				return -1;
 			}
 
@@ -186,6 +198,7 @@ int main() {
 				WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 				GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
 				CloseHandle(pipe);
+				CloseHandle(mutexHandle);
 				return -1;
 			}
 			
@@ -212,6 +225,7 @@ int main() {
 				WriteFile(connectionPipe(), buffer, sizeof(buffer), &bytesWritten, &overlapped);
 				GetOverlappedResult(pipe, &overlapped, &bytesWritten, TRUE);
 				CloseHandle(pipe);
+				CloseHandle(mutexHandle);
 				return -1;
 			}	
 	}
