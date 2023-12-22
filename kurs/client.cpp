@@ -13,7 +13,11 @@ DWORD WINAPI clientReceive(LPVOID lpParam) { //получения клиенто
 	char buffer[1024] = { 0 };
 	SOCKET server = *(SOCKET*)lpParam;
 	while (true) {
-		if (isTerminatedt1) { break; }
+		HANDLE mutexHandle = CreateMutexW(NULL, TRUE, (LPCWSTR)"recv_send");
+		if (isTerminatedt1) { 
+			CloseHandle(mutexHandle);
+			break;
+		}
 		if (recv(server, buffer, sizeof(buffer), 0) == SOCKET_ERROR ) {
 			if (WSAGetLastError() == 10054) {
 				cout << "Сервер отключен."<< endl;
@@ -26,8 +30,10 @@ DWORD WINAPI clientReceive(LPVOID lpParam) { //получения клиенто
 		}
 		if (strcmp(buffer, "") != 0) {
 			cout << "Server "<< buffer << endl;
-			memset(buffer, 0, sizeof(buffer));
+			
 		}
+		memset(buffer, 0, sizeof(buffer));
+		CloseHandle(mutexHandle);
 	}
 	isTerminatedt1 = false;
 	return 1;
@@ -37,8 +43,12 @@ DWORD WINAPI clientSend(LPVOID lpParam) { //отправка клиентом
 	char buffer[1024] = { 0 };
 	SOCKET server = *(SOCKET*)lpParam;
 	while (true) {
+		HANDLE mutexHandle = CreateMutexW(NULL, TRUE, (LPCWSTR)"recv_send");
 		fgets(buffer, 1024, stdin);
-		if (isTerminatedt2) { break; }
+		if (isTerminatedt2) { 
+			CloseHandle(mutexHandle);
+			break; 
+		}
 		if (send(server, buffer, sizeof(buffer), 0) == SOCKET_ERROR) {
 			cout << "Ошибка отправки запроса : " << WSAGetLastError() << endl;
 			return -1;
@@ -47,7 +57,8 @@ DWORD WINAPI clientSend(LPVOID lpParam) { //отправка клиентом
 			cout << "Выход с сервера" << endl;
 			return 1;
 		}
-
+		memset(buffer, 0, sizeof(buffer));
+		CloseHandle(mutexHandle);
 	}
 	isTerminatedt2 = false;
 	return 1;
@@ -64,6 +75,8 @@ int main() {
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
 	
 	while (true) {
+		isTerminatedt1 = false;
+		isTerminatedt2 = false;
 		if ((client = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
 			cout << "Ошибка создания сокета: " << WSAGetLastError() << endl;
 			WSACleanup();
@@ -99,8 +112,7 @@ int main() {
 			TerminateThread(t1, 1);
 			WaitForSingleObject(t1, INFINITE);
 			TerminateThread(t2, 1);
-			bool isTerminatedt1 = false;
-			bool isTerminatedt2 = false;
+			 
 			if (closesocket(client) == SOCKET_ERROR) { //Закрытие сокета
 				cout << "Ошибка закрытия сокета : " << WSAGetLastError() << endl;
 				WSACleanup();
