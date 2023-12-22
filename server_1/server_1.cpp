@@ -7,6 +7,7 @@
 #include <condition_variable>
 #include <Windows.h>
 #include <ctime>
+#include <locale>
 using namespace std;
 
 // Подключаемся к именованному каналу
@@ -48,6 +49,7 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 	char buffersr[1024] = { 0 };
 	char buffer[100] = { 0 };
 	char bufferready[1024] = {0};
+	setlocale(LC_CTYPE, "");
 	SOCKET client = *(SOCKET*)lpParam;
 	while (true) {
 		if (recv(client, buffercl, sizeof(buffercl), 0) == SOCKET_ERROR) {
@@ -110,6 +112,7 @@ DWORD WINAPI serverSend(LPVOID lpParam) { //Отправка клиенту
 			CloseHandle(pipe);
 		}
 		sprintf_s(bufferready, "%s %s %s", timeString, ":", buffersr);
+		
 		if (send(client, bufferready, strlen(bufferready), 0) == SOCKET_ERROR) {
 			cout << "Ошибка отправки ответа клиенту : " << WSAGetLastError() << endl;
 			sprintf_s(buffer, "%s %d", "Ошибка отправки ответа клиенту : ", WSAGetLastError());

@@ -6,29 +6,35 @@
 #include <unistd.h>
 #include <cstring>
 #include <clocale>
+#include <mutex>
 using namespace std;
 bool flag = true;
+mutex mutxHandle;
 void* clientReceive(void* lpParam) {
     char buffer[1024] = { 0 };
-    setlocale(LC_ALL,NULL);
+    setlocale(LC_ALL,"rus");
     int server = *(int*)lpParam;
     while (flag) {
+        
         if (!flag) {
+        mutxHandle.unlock();
             break;
         }
         if (recv(server, buffer, sizeof(buffer), 0) == -1) {
             cout << "Ошибка получения ответа" << endl;
             return nullptr;
         }
+        mutxHandle.lock();
         if (strcmp(buffer, "exit\n") == 0) {
             cout << "Сервер отключен" << endl;
             flag = false;
             break;
         }
         if (strcmp(buffer, "") != 0) {
-        cout << "Server: " << buffer << endl;
+        wcout << "Server: " << buffer << endl;
         memset(buffer, 0, sizeof(buffer));
         }
+        mutxHandle.unlock();
     }
     return nullptr;
 }
@@ -38,6 +44,7 @@ void* clientSend(void* lpParam) {
     int server = *(int*)lpParam;
     while (flag) {
         fgets(buffer, 1024, stdin);
+        mutxHandle.lock();
         if (send(server, buffer, strlen(buffer), 0) == -1) {
             cout << "Ошибка отправки запроса" << endl;
             return nullptr;
@@ -46,7 +53,9 @@ void* clientSend(void* lpParam) {
             cout << "Выход с сервера" << endl;
             flag = false;
             break;
+            mutxHandle.unlock();
         }
+        mutxHandle.unlock();
     }
     return nullptr;
 }
