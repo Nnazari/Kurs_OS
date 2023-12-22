@@ -3,8 +3,7 @@
 #include <iostream> 
 #include <cstdio> 
 #include <cstring> 
-#include <winsock2.h>
-#include <csignal> 
+#include <winsock2.h> 
 #pragma comment(lib, "WS2_32.lib")
 using namespace std;
 HANDLE t1, t2;
@@ -46,7 +45,6 @@ DWORD WINAPI clientSend(LPVOID lpParam) { //отправка клиентом
 		}
 		if (strcmp(buffer, "exit\n") == 0) {
 			cout << "Выход с сервера" << endl;
-			isTerminatedt1 = true;
 			return 1;
 		}
 
@@ -101,6 +99,8 @@ int main() {
 			TerminateThread(t1, 1);
 			WaitForSingleObject(t1, INFINITE);
 			TerminateThread(t2, 1);
+			bool isTerminatedt1 = false;
+			bool isTerminatedt2 = false;
 			if (closesocket(client) == SOCKET_ERROR) { //Закрытие сокета
 				cout << "Ошибка закрытия сокета : " << WSAGetLastError() << endl;
 				WSACleanup();

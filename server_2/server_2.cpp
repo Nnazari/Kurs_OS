@@ -29,7 +29,7 @@ DWORD WINAPI serverSend(LPVOID lpParam) {
 	char bufferready[1024] = { 0 };
 	SOCKET client = *(SOCKET*)lpParam;
 	while (true) {
-
+		
 		if (recv(client, buffercl, sizeof(buffercl), 0) == SOCKET_ERROR) {
 			cout << "Ошибка получения запроса от клиента: " << WSAGetLastError() << endl;
 			return -1;
@@ -93,7 +93,7 @@ DWORD WINAPI clientControl(LPVOID client) { //Поток клиента
 int main() {
 	HANDLE mutexHandle = CreateMutexW(NULL, TRUE, (LPCWSTR)"server_2");//проверка
 	WSADATA WSAData;
-	SOCKET server1, client;
+	SOCKET server2, client;
 	SOCKADDR_IN serverAddr, clientAddr;
 	WSAStartup(MAKEWORD(2, 0), &WSAData);
 	startTime = GetTickCount64();//добавить разветвление 
@@ -102,8 +102,8 @@ int main() {
 		cout << "Ошибка создания потока контроля: " << WSAGetLastError() << endl;
 	}
 	while (true) {
-		server1 = socket(AF_INET, SOCK_STREAM, 0); //создание сокета сервера
-		if (server1 == INVALID_SOCKET) {
+		server2 = socket(AF_INET, SOCK_STREAM, 0); //создание сокета сервера
+		if (server2 == INVALID_SOCKET) {
 			cout << "Ошибка создания сокета:" << WSAGetLastError() << endl;
 			CloseHandle(mutexHandle);
 			return -1;
@@ -111,13 +111,13 @@ int main() {
 		serverAddr.sin_addr.s_addr = inet_addr("192.168.0.106");
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_port = htons(5517);
-		if (bind(server1, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+		if (bind(server2, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
 			cout << "Ошибка привязки : " << WSAGetLastError() << endl;
 			CloseHandle(mutexHandle);
 			return -1;
 		}
 
-		if (listen(server1, 0) == SOCKET_ERROR) {
+		if (listen(server2, 0) == SOCKET_ERROR) {
 			cout << "Ошибка поиска:" << WSAGetLastError() << endl;
 			CloseHandle(mutexHandle);
 			return -1;
@@ -125,7 +125,7 @@ int main() {
 		cout << "Ожидание подключения клиента...." << endl;
 
 		int clientAddrSize = sizeof(clientAddr);
-		if ((client = accept(server1, (SOCKADDR*)&clientAddr, &clientAddrSize)) != INVALID_SOCKET) {
+		if ((client = accept(server2, (SOCKADDR*)&clientAddr, &clientAddrSize)) != INVALID_SOCKET) {
 			DWORD tid;
 			HANDLE cl = CreateThread(NULL, 0, clientControl, &client, 0, &tid);
 			if (cl == NULL) {
@@ -133,7 +133,7 @@ int main() {
 			}
 			WaitForSingleObject(cl, INFINITE);
 		}
-		if (closesocket(server1) == SOCKET_ERROR) {
+		if (closesocket(server2) == SOCKET_ERROR) {
 			cout << "Ошибка закрыттия сокета: " << WSAGetLastError() << endl;
 			CloseHandle(mutexHandle);
 			return -1;
